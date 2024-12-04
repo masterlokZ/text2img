@@ -182,7 +182,19 @@ function saveSettings() {
         padding: document.getElementById('padding').value,
         transparentBg: document.getElementById('transparent-bg').checked,
         squareImg: document.getElementById('square-img').checked,
-        filename: document.getElementById('filename').value
+        filename: document.getElementById('filename').value,
+        gradientStart: document.getElementById('gradient-start').value,
+        gradientEnd: document.getElementById('gradient-end').value,
+        gradientAngle: document.getElementById('gradient-angle').value,
+        lineHeight: document.getElementById('line-height').value,
+        textAlign: document.getElementById('text-align').value,
+        shadowX: document.getElementById('shadow-x').value,
+        shadowY: document.getElementById('shadow-y').value,
+        shadowBlur: document.getElementById('shadow-blur').value,
+        shadowColor: document.getElementById('shadow-color').value,
+        borderWidth: document.getElementById('border-width').value,
+        borderColor: document.getElementById('border-color').value,
+        bgOpacity: document.getElementById('bg-opacity').value
     };
     localStorage.setItem('text2imgSettings', JSON.stringify(settings));
 }
@@ -200,6 +212,18 @@ function loadSettings() {
         document.getElementById('transparent-bg').checked = settings.transparentBg;
         document.getElementById('square-img').checked = settings.squareImg;
         document.getElementById('filename').value = settings.filename;
+        document.getElementById('gradient-start').value = settings.gradientStart;
+        document.getElementById('gradient-end').value = settings.gradientEnd;
+        document.getElementById('gradient-angle').value = settings.gradientAngle;
+        document.getElementById('line-height').value = settings.lineHeight;
+        document.getElementById('text-align').value = settings.textAlign;
+        document.getElementById('shadow-x').value = settings.shadowX;
+        document.getElementById('shadow-y').value = settings.shadowY;
+        document.getElementById('shadow-blur').value = settings.shadowBlur;
+        document.getElementById('shadow-color').value = settings.shadowColor;
+        document.getElementById('border-width').value = settings.borderWidth;
+        document.getElementById('border-color').value = settings.borderColor;
+        document.getElementById('bg-opacity').value = settings.bgOpacity;
     }
 }
 
@@ -393,4 +417,88 @@ document.addEventListener('DOMContentLoaded', function() {
     previewCanvas.addEventListener('click', function() {
         modal.show(this);
     });
+});
+
+function generateImage() {
+    // ... 获取原有参数 ...
+    
+    // 获取新参数
+    const gradientStart = document.getElementById('gradient-start').value;
+    const gradientEnd = document.getElementById('gradient-end').value;
+    const gradientAngle = document.getElementById('gradient-angle').value;
+    const lineHeightRatio = parseFloat(document.getElementById('line-height').value);
+    const textAlign = document.getElementById('text-align').value;
+    const shadowX = parseInt(document.getElementById('shadow-x').value);
+    const shadowY = parseInt(document.getElementById('shadow-y').value);
+    const shadowBlur = parseInt(document.getElementById('shadow-blur').value);
+    const shadowColor = document.getElementById('shadow-color').value;
+    const borderWidth = parseInt(document.getElementById('border-width').value);
+    const borderColor = document.getElementById('border-color').value;
+    
+    // 设置背景渐变
+    if (!transparentBg) {
+        const gradient = context.createLinearGradient(0, 0, canvasWidth, canvasHeight);
+        gradient.addColorStop(0, gradientStart);
+        gradient.addColorStop(1, gradientEnd);
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    
+    // 绘制背景图案（如果有）
+    const bgImage = document.getElementById('bg-image').files[0];
+    if (bgImage) {
+        const img = new Image();
+        img.onload = () => {
+            context.globalAlpha = parseFloat(document.getElementById('bg-opacity').value);
+            context.drawImage(img, 0, 0, canvas.width, canvas.height);
+            context.globalAlpha = 1.0;
+            drawText();
+        };
+        img.src = URL.createObjectURL(bgImage);
+    } else {
+        drawText();
+    }
+    
+    function drawText() {
+        // 设置文字样式
+        context.font = `${fontSize}px ${fontFamily}`;
+        context.fillStyle = color;
+        context.textAlign = textAlign;
+        context.textBaseline = 'top';
+        context.shadowOffsetX = shadowX;
+        context.shadowOffsetY = shadowY;
+        context.shadowBlur = shadowBlur;
+        context.shadowColor = shadowColor;
+        
+        // 绘制文字
+        lines.forEach((line, index) => {
+            let xOffset;
+            switch(textAlign) {
+                case 'center':
+                    xOffset = canvasWidth / (2 * scaleFactor);
+                    break;
+                case 'right':
+                    xOffset = (canvasWidth / scaleFactor) - padding;
+                    break;
+                default:
+                    xOffset = padding;
+            }
+            context.fillText(line, xOffset, yOffset + index * (lineHeight * lineHeightRatio));
+        });
+        
+        // 绘制边框
+        if (borderWidth > 0) {
+            context.strokeStyle = borderColor;
+            context.lineWidth = borderWidth;
+            context.strokeRect(0, 0, canvas.width, canvas.height);
+        }
+    }
+}
+
+// 实时预览
+const controlInputs = document.querySelectorAll('.control-group input, .control-group select');
+controlInputs.forEach(input => {
+    input.addEventListener('input', debounce(() => {
+        generateImage();
+    }, 300));
 });
